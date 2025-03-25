@@ -55,8 +55,8 @@ const dateOptions = {
 	
 dateOptions.timeZone = "America/New_York";
 dateOptions.timeZoneName = "short";
-console.log(now.toLocaleString("en-US", dateOptions));
-var dateOnly = now.toLocaleString("en-US", dateOptions);
+console.log(now.toLocaleDateString("en-US", dateOptions));
+var dateOnly = now.toLocaleDateString("en-US", dateOptions);
 
 const timeOptions = { timeZone: "EST", timeZoneName: "short"};
 console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
