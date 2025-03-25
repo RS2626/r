@@ -55,14 +55,15 @@ const dateOptions = {
 	
 dateOptions.timeZone = "EST";
 dateOptions.timeZoneName = "short";
-console.log(now.toLocaleString("en-US", dateOptions));
+//console.log(now.toLocaleString("en-US", dateOptions));
 var dateOnly = now.toLocaleString("en-US", dateOptions);
 
 const timeOptions = { timeZone: "EST", timeZoneName: "short" };
-console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
+//console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
 var timeOnly = now.toLocaleTimeString("en-US", dateOptions);
 	
-document.getElementById("datetime").innerHTML = dateOnly + " @ " + timeOnly;
+//document.getElementById("datetime").innerHTML = dateOnly + " @ " + timeOnly;
+document.getElementById("datetime").innerHTML = timeOnly;
 	
 </script>
 
