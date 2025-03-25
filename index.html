@@ -55,11 +55,11 @@ const dateOptions = {
 	
 dateOptions.timeZone = "America/New_York";
 dateOptions.timeZoneName = "short";
-//console.log(now.toLocaleString("en-US", dateOptions));
+console.log(now.toLocaleString("en-US", dateOptions));
 var dateOnly = now.toLocaleString("en-US", dateOptions);
 
-const timeOptions = { timeZone: "America/New_York"};
-//console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
+const timeOptions = { timeZone: "America/New_York", timeZoneName: "short"};
+console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
 var timeOnly = now.toLocaleTimeString("en-US", timeOptions);
 	
 //document.getElementById("datetime").innerHTML = dateOnly + " @ " + timeOnly;
