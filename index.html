@@ -46,20 +46,23 @@ var content = $('.pages')
   var now = new Date();
 	
 // Request a weekday along with a long date
-const options = {
+const dateOptions = {
   weekday: "long",
   year: "numeric",
   month: "long",
   day: "numeric",
 };
 	
-options.timeZone = "EST";
-options.timeZoneName = "short";
-console.log(now.toLocaleString("en-US", options));
+dateOptions.timeZone = "EST";
+dateOptions.timeZoneName = "short";
+console.log(now.toLocaleString("en-US", dateOptions));
+var dateOnly = now.toLocaleString("en-US", dateOptions);
+
+const timeOptions = { timeZone: "EST", timeZoneName: "short" };
+console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
+var timeOnly = now.toLocaleTimeString("en-US", dateOptions);
 	
-  //var datetime = now.toLocaleString();
- var datetime = now.toLocaleString("en-US", options);
-document.getElementById("datetime").innerHTML = datetime;
+document.getElementById("datetime").innerHTML = dateOnly + " @ " + timeOnly;
 	
 </script>
 
