@@ -44,8 +44,23 @@ var content = $('.pages')
 
 <script>
   var now = new Date();
-  var datetime = now.toLocaleString();
-  document.getElementById("datetime").innerHTML = datetime;
+	
+// Request a weekday along with a long date
+const options = {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+};
+	
+options.timeZone = "EST";
+options.timeZoneName = "short";
+console.log(now.toLocaleString("en-US", options));
+	
+  //var datetime = now.toLocaleString();
+ var datetime = now.toLocaleString("en-US", options);
+document.getElementById("datetime").innerHTML = datetime;
+	
 </script>
 
 
