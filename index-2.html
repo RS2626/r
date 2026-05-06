@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Itinerary Schedule with Countdown</title>
+    <title>Filtered Itinerary Schedule</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     <style>
         :root {
@@ -29,8 +29,35 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         }
 
-        h2 { margin-top: 0; color: #1a73e8; text-align: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 15px; }
-        
+        h2 { margin-top: 0; color: #1a73e8; text-align: center; }
+
+        /* Filter Checkbox Styling */
+        .filter-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+        }
+
+        /* Color matching for the filter labels */
+        .f-r { background: #007bff; }
+        .f-s { background: #28a745; }
+        .f-u { background: #000000; }
+        .f-n { background: #dc3545; }
+
         .event-card {
             display: flex;
             align-items: center;
@@ -40,7 +67,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* Countdown Bubble Styling */
         .countdown-bubble {
             background: rgba(255, 255, 255, 0.25);
             color: inherit;
@@ -64,22 +90,12 @@
         .date-text { font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; display: block; opacity: 0.9; }
         .title-text { font-size: 1.15rem; font-weight: 600; display: block; }
 
-        /* Status Styles (Case-Insensitive) */
+        /* Status Styles */
         .status-r { background-color: #007bff; color: #ffffff; } 
         .status-s { background-color: #28a745; color: #ffffff; } 
         .status-u { background-color: #000000; color: #ffffff; } 
         .status-n { background-color: #dc3545; color: #ffffff; } 
-        
-        .status-default { 
-            background-color: #ffffff; 
-            color: #333; 
-            border: 1px solid #ddd; 
-        }
-        /* Adjust bubble for default white background */
-        .status-default .countdown-bubble {
-            background: #f0f2f5;
-            border-color: #ddd;
-        }
+        .status-default { background-color: #ffffff; color: #333; border: 1px solid #ddd; }
 
         .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; }
     </style>
@@ -87,25 +103,36 @@
 <body>
 
 <div class="container">
-    <h2>Upcoming Schedule</h2>
+    <h2>Schedule</h2>
+
+    <!-- Checkbox Filters -->
+    <div class="filter-group">
+        <label class="filter-item f-u"><input type="checkbox" class="filter-check" value="U -" checked> U</label>
+        <label class="filter-item f-n"><input type="checkbox" class="filter-check" value="N -" checked> N</label>
+        <label class="filter-item f-r"><input type="checkbox" class="filter-check" value="R -" checked> R</label>
+        <label class="filter-item f-s"><input type="checkbox" class="filter-check" value="S -" checked> S</label>
+    </div>
+
     <div id="event-list">
-        <p class="status-msg">Loading itinerary...</p>
+        <p class="status-msg">Loading events...</p>
     </div>
 </div>
 
 <script>
-    /** 
-     * CONFIGURATION: 
-     * Paste your public iCal link between the quotes below.
-     */
     const ICAL_LINK = "https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/private-c2a909cd3418b50c8f35f20941040de2/basic.ics";
+    let allEvents = [];
 
     window.onload = loadCalendar;
 
+    // Listen for checkbox changes
+    document.querySelectorAll('.filter-check').forEach(box => {
+        box.addEventListener('change', () => render(allEvents));
+    });
+
     async function loadCalendar() {
         const listContainer = document.getElementById('event-list');
-        if (!ICAL_LINK || ICAL_LINK === "PASTE_YOUR_ICAL_LINK_HERE") {
-            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error: No iCal link detected in the code.</p>';
+        if (!ICAL_LINK || ICAL_LINK.includes("PASTE_YOUR")) {
+            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Please add your iCal link to the HTML code.</p>';
             return;
         }
 
@@ -121,7 +148,7 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            const events = vevents
+            allEvents = vevents
                 .map(vevent => {
                     const event = new ICAL.Event(vevent);
                     return {
@@ -132,56 +159,57 @@
                 .filter(e => e.start >= today)
                 .sort((a, b) => a.start - b.start);
 
-            render(events);
+            render(allEvents);
         } catch (err) {
             listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error syncing calendar.</p>';
-            console.error(err);
         }
     }
 
-    function getDaysRemaining(eventDate) {
-        const now = new Date();
-        now.setHours(0,0,0,0);
-        const eventDay = new Date(eventDate);
-        eventDay.setHours(0,0,0,0);
-        
-        const diffInMs = eventDay - now;
-        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-        
-        if (diffInDays === 0) return "Today";
-        if (diffInDays === 1) return "1 Day";
-        return `${diffInDays} Days`;
-    }
-
-    function getEventClass(summary) {
-        const checkValue = summary.toUpperCase(); 
-        if (checkValue.startsWith("R -")) return "status-r";
-        if (checkValue.startsWith("S -")) return "status-s";
-        if (checkValue.startsWith("U -")) return "status-u";
-        if (checkValue.startsWith("N -")) return "status-n";
-        return "status-default";
+    function getEventStatus(summary) {
+        const upper = summary.toUpperCase();
+        if (upper.startsWith("R -")) return "R -";
+        if (upper.startsWith("S -")) return "S -";
+        if (upper.startsWith("U -")) return "U -";
+        if (upper.startsWith("N -")) return "N -";
+        return null;
     }
 
     function render(events) {
         const listContainer = document.getElementById('event-list');
-        if (events.length === 0) {
-            listContainer.innerHTML = '<p class="status-msg">No upcoming events.</p>';
+        
+        // Get currently selected filters
+        const activeFilters = Array.from(document.querySelectorAll('.filter-check:checked'))
+                                   .map(cb => cb.value);
+
+        // Filter the events based on the summary prefix
+        const filtered = events.filter(e => {
+            const status = getEventStatus(e.summary);
+            return activeFilters.includes(status);
+        });
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = '<p class="status-msg">No matching events found for selected filters.</p>';
             return;
         }
 
-        listContainer.innerHTML = events.map(e => {
-            const cssClass = getEventClass(e.summary);
-            const countdownText = getDaysRemaining(e.start);
+        listContainer.innerHTML = filtered.map(e => {
+            const statusPrefix = getEventStatus(e.summary);
+            const cssClass = "status-" + statusPrefix.charAt(0).toLowerCase();
+            
+            // Countdown logic
+            const now = new Date(); now.setHours(0,0,0,0);
+            const eventDay = new Date(e.start); eventDay.setHours(0,0,0,0);
+            const diffDays = Math.floor((eventDay - now) / (1000 * 60 * 60 * 24));
+            
+            let num = diffDays, label = "Days";
+            if (diffDays === 0) { num = "In"; label = "Today"; }
+            else if (diffDays === 1) { label = "Day"; }
+
             const formattedDate = e.start.toLocaleDateString([], { 
                 weekday: 'short', month: 'short', day: 'numeric', 
                 hour: '2-digit', minute: '2-digit' 
             });
             
-            // Logic to split the countdown text into Number and Label for the bubble
-            let num = countdownText.split(' ')[0];
-            let label = countdownText.split(' ')[1] || "";
-            if (countdownText === "Today") { num = "In"; label = "Today"; }
-
             return `
                 <div class="event-card ${cssClass}">
                     <div class="countdown-bubble">
