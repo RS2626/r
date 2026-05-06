@@ -98,13 +98,13 @@
      * CONFIGURATION: 
      * Paste your public iCal link between the quotes below.
      */
-    const ICAL_LINK = "PASTE_YOUR_ICAL_LINK_HERE";
+    const ICAL_LINK = "https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/private-c2a909cd3418b50c8f35f20941040de2/basic.ics";
 
     window.onload = loadCalendar;
 
     async function loadCalendar() {
         const listContainer = document.getElementById('event-list');
-        if (!ICAL_LINK || ICAL_LINK === "https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/private-c2a909cd3418b50c8f35f20941040de2/basic.ics") {
+        if (!ICAL_LINK || ICAL_LINK === "PASTE_YOUR_ICAL_LINK_HERE") {
             listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error: No iCal link detected in the code.</p>';
             return;
         }
