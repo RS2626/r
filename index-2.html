@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Schedule</title>
+    <title>Mobile Schedule with Tools</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     <style>
         :root {
             --bg-color: #f8f9fa;
             --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --base-font-size: 16px;
         }
 
         body {
@@ -18,6 +19,7 @@
             padding: 10px;
             display: flex;
             justify-content: center;
+            font-size: var(--base-font-size);
         }
 
         .container {
@@ -30,14 +32,39 @@
             box-sizing: border-box;
         }
 
-        h2 { 
-            margin: 10px 0 20px; 
-            color: #1a73e8; 
-            text-align: center; 
-            font-size: 1.4rem;
+        /* Top Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: #5f6368;
         }
 
-        /* Mobile-Optimized Filter Group */
+        .font-controls button {
+            background: #eee;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .est-clock {
+            text-align: right;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        h2 { 
+            margin: 5px 0 15px; 
+            color: #1a73e8; 
+            text-align: center; 
+            font-size: 1.4em;
+        }
+
         .filter-group {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -51,31 +78,26 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 10px 5px;
             border-radius: 10px;
             color: white;
-            font-size: 0.9rem;
+            font-size: 0.9em;
             font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .filter-item input { margin-bottom: 5px; transform: scale(1.2); }
+        .filter-item input { transform: scale(1.2); margin-bottom: 4px; }
 
         .f-u { background: #000000; }
         .f-n { background: #dc3545; }
         .f-r { background: #007bff; }
         .f-s { background: #28a745; }
 
-        /* Event Card Layout */
         .event-card {
             display: flex;
             align-items: center;
             padding: 12px;
             margin-bottom: 10px;
             border-radius: 12px;
-            box-sizing: border-box;
         }
 
         .countdown-bubble {
@@ -92,42 +114,32 @@
             flex-shrink: 0;
         }
 
-        .days-num { font-size: 1.1rem; font-weight: 800; line-height: 1; }
-        .days-label { font-size: 0.55rem; text-transform: uppercase; font-weight: bold; }
+        .days-num { font-size: 1.1em; font-weight: 800; line-height: 1; }
+        .days-label { font-size: 0.55em; text-transform: uppercase; }
 
-        .event-info { 
-            flex-grow: 1; 
-            min-width: 0; /* Important for text truncation/wrapping in flex */
-        }
+        .event-info { flex-grow: 1; min-width: 0; }
+        .date-text { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; opacity: 0.9; }
+        .title-text { font-size: 1em; font-weight: 600; display: block; word-wrap: break-word; }
 
-        .date-text { 
-            font-size: 0.75rem; 
-            font-weight: bold; 
-            margin-bottom: 2px; 
-            display: block; 
-            opacity: 0.9; 
-        }
-
-        .title-text { 
-            font-size: 1rem; 
-            font-weight: 600; 
-            display: block;
-            word-wrap: break-word; /* Ensures long titles don't break the layout */
-        }
-
-        /* Card Colors */
         .status-r { background-color: #007bff; color: white; } 
         .status-s { background-color: #28a745; color: white; } 
         .status-u { background-color: #000000; color: white; } 
         .status-n { background-color: #dc3545; color: white; } 
-        .status-default { background-color: white; color: #333; border: 1px solid #ddd; }
 
-        .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; font-size: 0.9rem; }
+        .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="toolbar">
+        <div class="font-controls">
+            <button onclick="changeFontSize(1)">A+</button>
+            <button onclick="changeFontSize(-1)">A-</button>
+        </div>
+        <div class="est-clock" id="estClock">Loading EST...</div>
+    </div>
+
     <h2>Schedule</h2>
 
     <div class="filter-group">
@@ -143,11 +155,37 @@
 </div>
 
 <script>
-    // Paste your .ics link here
     const ICAL_LINK = "https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/private-c2a909cd3418b50c8f35f20941040de2/basic.ics";
     let allEvents = [];
+    let currentFontSize = 16;
 
-    window.onload = loadCalendar;
+    // Initialize
+    window.onload = () => {
+        loadCalendar();
+        updateClock();
+        setInterval(updateClock, 1000);
+    };
+
+    // Font size logic
+    function changeFontSize(delta) {
+        currentFontSize += delta;
+        document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+    }
+
+    // EST Clock logic
+    function updateClock() {
+        const options = { 
+            timeZone: 'America/New_York', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true,
+            month: 'short',
+            day: 'numeric'
+        };
+        const formatter = new Intl.DateTimeFormat('en-US', options);
+        document.getElementById('estClock').innerText = formatter.format(new Date()) + " EST";
+    }
 
     document.querySelectorAll('.filter-check').forEach(box => {
         box.addEventListener('change', () => render(allEvents));
@@ -156,7 +194,7 @@
     async function loadCalendar() {
         const listContainer = document.getElementById('event-list');
         if (!ICAL_LINK || ICAL_LINK.includes("PASTE_YOUR")) {
-            listContainer.innerHTML = '<p class="status-msg">Update the ICAL_LINK in the script to see events.</p>';
+            listContainer.innerHTML = '<p class="status-msg">Update ICAL_LINK in script.</p>';
             return;
         }
 
@@ -164,7 +202,6 @@
             const proxy = "https://corsproxy.io/?"; 
             const response = await fetch(proxy + encodeURIComponent(ICAL_LINK));
             const text = await response.text();
-
             const jcalData = ICAL.parse(text);
             const comp = new ICAL.Component(jcalData);
             const vevents = comp.getAllSubcomponents('vevent');
@@ -172,20 +209,17 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            allEvents = vevents
-                .map(vevent => {
-                    const event = new ICAL.Event(vevent);
-                    return {
-                        summary: event.summary || "No Title",
-                        start: event.startDate.toJSDate()
-                    };
-                })
-                .filter(e => e.start >= today)
-                .sort((a, b) => a.start - b.start);
+            allEvents = vevents.map(vevent => {
+                const event = new ICAL.Event(vevent);
+                return {
+                    summary: event.summary || "No Title",
+                    start: event.startDate.toJSDate()
+                };
+            }).filter(e => e.start >= today).sort((a, b) => a.start - b.start);
 
             render(allEvents);
         } catch (err) {
-            listContainer.innerHTML = '<p class="status-msg">Failed to load calendar.</p>';
+            listContainer.innerHTML = '<p class="status-msg">Sync Error.</p>';
         }
     }
 
@@ -201,18 +235,16 @@
     function render(events) {
         const listContainer = document.getElementById('event-list');
         const activeFilters = Array.from(document.querySelectorAll('.filter-check:checked')).map(cb => cb.value);
-
         const filtered = events.filter(e => activeFilters.includes(getEventStatus(e.summary)));
 
         if (filtered.length === 0) {
-            listContainer.innerHTML = '<p class="status-msg">No events for selected filters.</p>';
+            listContainer.innerHTML = '<p class="status-msg">No matching events.</p>';
             return;
         }
 
         listContainer.innerHTML = filtered.map(e => {
             const prefix = getEventStatus(e.summary);
             const cssClass = "status-" + prefix.charAt(0).toLowerCase();
-            
             const now = new Date(); now.setHours(0,0,0,0);
             const eventDay = new Date(e.start); eventDay.setHours(0,0,0,0);
             const diffDays = Math.floor((eventDay - now) / (1000 * 60 * 60 * 24));
