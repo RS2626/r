@@ -1,82 +1,155 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Calendar Parser</title>
-    <!-- We use ICAL.js to parse the raw calendar data -->
+    <title>Itinerary Schedule Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; background-color: #f9f9f9; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
-        button:hover { background: #1765cc; }
-        #event-list { margin-top: 20px; }
-        .event-item { padding: 15px; border-bottom: 1px solid #eee; }
-        .event-item:last-child { border-bottom: none; }
-        .event-date { color: #d93025; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
-        .event-title { display: block; font-size: 1.1rem; margin-top: 4px; font-weight: 500; }
+        :root {
+            --bg-color: #f0f2f5;
+            --font-stack: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .controls { margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        button:hover { background: #1557b0; }
+        
+        .event-card {
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            transition: transform 0.1s ease;
+        }
+
+        .date-text { font-size: 0.85rem; font-weight: bold; margin-bottom: 4px; display: block; opacity: 0.9; }
+        .title-text { font-size: 1.15rem; font-weight: 600; display: block; }
+
+        /* Case-Insensitive Status Styles */
+        .status-r { background-color: #007bff; color: #ffffff; } /* Blue */
+        .status-s { background-color: #28a745; color: #ffffff; } /* Green */
+        .status-u { background-color: #000000; color: #ffffff; } /* Black */
+        .status-n { background-color: #dc3545; color: #ffffff; } /* Red */
+        
+        .status-default { 
+            background-color: #ffffff; 
+            color: #333; 
+            border: 1px solid #ddd; 
+        }
+
+        .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Calendar Chronology</h2>
-    <p style="font-size: 0.9rem; color: #666;">Paste your Public iCal URL (ends in .ics):</p>
-    <input type="text" id="calUrl" placeholder="https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/public/basic.ics">
-    <button onclick="fetchAndParse()">List Events</button>
-
-    <div id="event-list"></div>
+    <h2 style="margin-top:0; color:#1a73e8;">Upcoming Itinerary</h2>
+    <div class="controls">
+        <input type="text" id="icsUrl" placeholder="Paste Public iCal (.ics) link here...">
+        <button onclick="loadCalendar()">Update List</button>
+    </div>
+    <div id="event-list">
+        <p class="status-msg">Enter link and click update to begin.</p>
+    </div>
 </div>
 
 <script>
-    async function fetchAndParse() {
-        const url = document.getElementById('calUrl').value;
+    async function loadCalendar() {
+        const urlInput = document.getElementById('icsUrl').value.trim();
         const listContainer = document.getElementById('event-list');
-        listContainer.innerHTML = "Loading...";
-
-        try {
-            // Note: Public fetches may require a CORS proxy if running locally
-            const proxy = "https://corsproxy.io/?"; 
-            const response = await fetch(proxy + encodeURIComponent(url));
-            const data = await response.text();
-            
-            const jcalData = ICAL.parse(data);
-            const comp = new ICAL.Component(jcalData);
-            const vevents = comp.getAllSubcomponents('vevent');
-
-            // Map and sort events by start date
-            const events = vevents.map(vevent => {
-                const event = new ICAL.Event(vevent);
-                return {
-                    title: event.summary,
-                    start: event.startDate.toJSDate(),
-                    description: event.description
-                };
-            }).sort((a, b) => a.start - b.start);
-
-            displayEvents(events);
-        } catch (error) {
-            listContainer.innerHTML = "<p style='color:red'>Error: Could not fetch calendar. Ensure the URL is a public .ics link.</p>";
-            console.error(error);
-        }
-    }
-
-    function displayEvents(events) {
-        const listContainer = document.getElementById('event-list');
-        if (events.length === 0) {
-            listContainer.innerHTML = "No upcoming events found.";
+        
+        if (!urlInput.includes('.ics')) {
+            alert("Please provide a valid link ending in .ics");
             return;
         }
 
-        listContainer.innerHTML = events.map(ev => `
-            <div class="event-item">
-                <div class="event-date">${ev.start.toLocaleString([], {weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</div>
-                <span class="event-title">${ev.title}</span>
-            </div>
-        `).join('');
+        listContainer.innerHTML = '<p class="status-msg">Fetching your schedule...</p>';
+
+        try {
+            const proxy = "https://corsproxy.io/?"; 
+            const response = await fetch(proxy + encodeURIComponent(urlInput));
+            const text = await response.text();
+
+            const jcalData = ICAL.parse(text);
+            const comp = new ICAL.Component(jcalData);
+            const vevents = comp.getAllSubcomponents('vevent');
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const events = vevents
+                .map(vevent => {
+                    const event = new ICAL.Event(vevent);
+                    return {
+                        summary: event.summary || "Untitled Event",
+                        start: event.startDate.toJSDate()
+                    };
+                })
+                .filter(e => e.start >= today)
+                .sort((a, b) => a.start - b.start);
+
+            render(events);
+        } catch (err) {
+            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error: Link may not be public or is incorrect.</p>';
+            console.error(err);
+        }
+    }
+
+    /**
+     * Case-Insensitive Logic:
+     * Converts the summary string to uppercase before checking the prefix.
+     */
+    function getEventClass(summary) {
+        const checkValue = summary.toUpperCase(); 
+        
+        if (checkValue.startsWith("R -")) return "status-r";
+        if (checkValue.startsWith("S -")) return "status-s";
+        if (checkValue.startsWith("U -")) return "status-u";
+        if (checkValue.startsWith("N -")) return "status-n";
+        
+        return "status-default";
+    }
+
+    function render(events) {
+        const listContainer = document.getElementById('event-list');
+        if (events.length === 0) {
+            listContainer.innerHTML = '<p class="status-msg">No future events found.</p>';
+            return;
+        }
+
+        listContainer.innerHTML = events.map(e => {
+            const cssClass = getEventClass(e.summary);
+            const formattedDate = e.start.toLocaleDateString([], { 
+                weekday: 'short', month: 'short', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
+            return `
+                <div class="event-card ${cssClass}">
+                    <span class="date-text">${formattedDate}</span>
+                    <span class="title-text">${e.summary}</span>
+                </div>
+            `;
+        }).join('');
     }
 </script>
 
