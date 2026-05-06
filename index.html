@@ -24,7 +24,7 @@ var content = $('.pages')
 	content.hide();
 	Rotator();
 	function Rotator() {
-	$(content[current]).fadeIn('slow').delay(10000).fadeOut('slow');
+	$(content[current]).fadeIn('slow').delay(100000).fadeOut('slow');
 	$(content[current]).queue(function() {
 		current = current < content.length - 1 ? current + 1 : 0;
 		Rotator();
