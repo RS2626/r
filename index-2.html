@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Itinerary Schedule Viewer</title>
+    <title>Live Itinerary Schedule with Countdown</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     <style>
         :root {
@@ -29,31 +29,56 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         }
 
-        .controls { margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        button:hover { background: #1557b0; }
+        h2 { margin-top: 0; color: #1a73e8; text-align: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 15px; }
         
         .event-card {
+            display: flex;
+            align-items: center;
             padding: 16px;
             margin-bottom: 12px;
             border-radius: 8px;
-            transition: transform 0.1s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .date-text { font-size: 0.85rem; font-weight: bold; margin-bottom: 4px; display: block; opacity: 0.9; }
+        /* Countdown Bubble Styling */
+        .countdown-bubble {
+            background: rgba(255, 255, 255, 0.25);
+            color: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            min-width: 65px;
+            height: 45px;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .days-num { font-size: 1.1rem; line-height: 1; }
+        .days-label { font-size: 0.6rem; text-transform: uppercase; }
+
+        .event-info { flex-grow: 1; }
+        .date-text { font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; display: block; opacity: 0.9; }
         .title-text { font-size: 1.15rem; font-weight: 600; display: block; }
 
-        /* Case-Insensitive Status Styles */
-        .status-r { background-color: #007bff; color: #ffffff; } /* Blue */
-        .status-s { background-color: #28a745; color: #ffffff; } /* Green */
-        .status-u { background-color: #000000; color: #ffffff; } /* Black */
-        .status-n { background-color: #dc3545; color: #ffffff; } /* Red */
+        /* Status Styles (Case-Insensitive) */
+        .status-r { background-color: #007bff; color: #ffffff; } 
+        .status-s { background-color: #28a745; color: #ffffff; } 
+        .status-u { background-color: #000000; color: #ffffff; } 
+        .status-n { background-color: #dc3545; color: #ffffff; } 
         
         .status-default { 
             background-color: #ffffff; 
             color: #333; 
             border: 1px solid #ddd; 
+        }
+        /* Adjust bubble for default white background */
+        .status-default .countdown-bubble {
+            background: #f0f2f5;
+            border-color: #ddd;
         }
 
         .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; }
@@ -62,31 +87,31 @@
 <body>
 
 <div class="container">
-    <h2 style="margin-top:0; color:#1a73e8;">Upcoming Itinerary</h2>
-    <div class="controls">
-        <input type="text" id="icsUrl" placeholder="Paste Public iCal (.ics) link here...">
-        <button onclick="loadCalendar()">Update List</button>
-    </div>
+    <h2>Upcoming Schedule</h2>
     <div id="event-list">
-        <p class="status-msg">Enter link and click update to begin.</p>
+        <p class="status-msg">Loading itinerary...</p>
     </div>
 </div>
 
 <script>
+    /** 
+     * CONFIGURATION: 
+     * Paste your public iCal link between the quotes below.
+     */
+    const ICAL_LINK = "PASTE_YOUR_ICAL_LINK_HERE";
+
+    window.onload = loadCalendar;
+
     async function loadCalendar() {
-        const urlInput = document.getElementById('icsUrl').value.trim();
         const listContainer = document.getElementById('event-list');
-        
-        if (!urlInput.includes('.ics')) {
-            alert("Please provide a valid link ending in .ics");
+        if (!ICAL_LINK || ICAL_LINK === "PASTE_YOUR_ICAL_LINK_HERE") {
+            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error: No iCal link detected in the code.</p>';
             return;
         }
 
-        listContainer.innerHTML = '<p class="status-msg">Fetching your schedule...</p>';
-
         try {
             const proxy = "https://corsproxy.io/?"; 
-            const response = await fetch(proxy + encodeURIComponent(urlInput));
+            const response = await fetch(proxy + encodeURIComponent(ICAL_LINK));
             const text = await response.text();
 
             const jcalData = ICAL.parse(text);
@@ -109,44 +134,64 @@
 
             render(events);
         } catch (err) {
-            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error: Link may not be public or is incorrect.</p>';
+            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error syncing calendar.</p>';
             console.error(err);
         }
     }
 
-    /**
-     * Case-Insensitive Logic:
-     * Converts the summary string to uppercase before checking the prefix.
-     */
+    function getDaysRemaining(eventDate) {
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        const eventDay = new Date(eventDate);
+        eventDay.setHours(0,0,0,0);
+        
+        const diffInMs = eventDay - now;
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+        
+        if (diffInDays === 0) return "Today";
+        if (diffInDays === 1) return "1 Day";
+        return `${diffInDays} Days`;
+    }
+
     function getEventClass(summary) {
         const checkValue = summary.toUpperCase(); 
-        
         if (checkValue.startsWith("R -")) return "status-r";
         if (checkValue.startsWith("S -")) return "status-s";
         if (checkValue.startsWith("U -")) return "status-u";
         if (checkValue.startsWith("N -")) return "status-n";
-        
         return "status-default";
     }
 
     function render(events) {
         const listContainer = document.getElementById('event-list');
         if (events.length === 0) {
-            listContainer.innerHTML = '<p class="status-msg">No future events found.</p>';
+            listContainer.innerHTML = '<p class="status-msg">No upcoming events.</p>';
             return;
         }
 
         listContainer.innerHTML = events.map(e => {
             const cssClass = getEventClass(e.summary);
+            const countdownText = getDaysRemaining(e.start);
             const formattedDate = e.start.toLocaleDateString([], { 
                 weekday: 'short', month: 'short', day: 'numeric', 
                 hour: '2-digit', minute: '2-digit' 
             });
             
+            // Logic to split the countdown text into Number and Label for the bubble
+            let num = countdownText.split(' ')[0];
+            let label = countdownText.split(' ')[1] || "";
+            if (countdownText === "Today") { num = "In"; label = "Today"; }
+
             return `
                 <div class="event-card ${cssClass}">
-                    <span class="date-text">${formattedDate}</span>
-                    <span class="title-text">${e.summary}</span>
+                    <div class="countdown-bubble">
+                        <span class="days-num">${num}</span>
+                        <span class="days-label">${label}</span>
+                    </div>
+                    <div class="event-info">
+                        <span class="date-text">${formattedDate}</span>
+                        <span class="title-text">${e.summary}</span>
+                    </div>
                 </div>
             `;
         }).join('');
