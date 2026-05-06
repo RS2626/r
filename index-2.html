@@ -2,102 +2,127 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtered Itinerary Schedule</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Schedule</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     <style>
         :root {
-            --bg-color: #f0f2f5;
-            --font-stack: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --bg-color: #f8f9fa;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
             font-family: var(--font-stack);
             background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
             display: flex;
             justify-content: center;
-            padding: 40px 20px;
-            margin: 0;
         }
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 500px;
             background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-sizing: border-box;
         }
 
-        h2 { margin-top: 0; color: #1a73e8; text-align: center; }
+        h2 { 
+            margin: 10px 0 20px; 
+            color: #1a73e8; 
+            text-align: center; 
+            font-size: 1.4rem;
+        }
 
-        /* Filter Checkbox Styling */
+        /* Mobile-Optimized Filter Group */
         .filter-group {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #f0f2f5;
+            border-bottom: 1px solid #eee;
         }
 
         .filter-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            padding: 10px 5px;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9rem;
             font-weight: bold;
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
-            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Color matching for the filter labels */
-        .f-r { background: #007bff; }
-        .f-s { background: #28a745; }
+        .filter-item input { margin-bottom: 5px; transform: scale(1.2); }
+
         .f-u { background: #000000; }
         .f-n { background: #dc3545; }
+        .f-r { background: #007bff; }
+        .f-s { background: #28a745; }
 
+        /* Event Card Layout */
         .event-card {
             display: flex;
             align-items: center;
-            padding: 16px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            box-sizing: border-box;
         }
 
         .countdown-bubble {
-            background: rgba(255, 255, 255, 0.25);
-            color: inherit;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            min-width: 65px;
-            height: 45px;
-            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            min-width: 55px;
+            height: 55px;
+            border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
-            font-weight: bold;
+            margin-right: 12px;
             flex-shrink: 0;
         }
 
-        .days-num { font-size: 1.1rem; line-height: 1; }
-        .days-label { font-size: 0.6rem; text-transform: uppercase; }
+        .days-num { font-size: 1.1rem; font-weight: 800; line-height: 1; }
+        .days-label { font-size: 0.55rem; text-transform: uppercase; font-weight: bold; }
 
-        .event-info { flex-grow: 1; }
-        .date-text { font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; display: block; opacity: 0.9; }
-        .title-text { font-size: 1.15rem; font-weight: 600; display: block; }
+        .event-info { 
+            flex-grow: 1; 
+            min-width: 0; /* Important for text truncation/wrapping in flex */
+        }
 
-        /* Status Styles */
-        .status-r { background-color: #007bff; color: #ffffff; } 
-        .status-s { background-color: #28a745; color: #ffffff; } 
-        .status-u { background-color: #000000; color: #ffffff; } 
-        .status-n { background-color: #dc3545; color: #ffffff; } 
-        .status-default { background-color: #ffffff; color: #333; border: 1px solid #ddd; }
+        .date-text { 
+            font-size: 0.75rem; 
+            font-weight: bold; 
+            margin-bottom: 2px; 
+            display: block; 
+            opacity: 0.9; 
+        }
 
-        .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; }
+        .title-text { 
+            font-size: 1rem; 
+            font-weight: 600; 
+            display: block;
+            word-wrap: break-word; /* Ensures long titles don't break the layout */
+        }
+
+        /* Card Colors */
+        .status-r { background-color: #007bff; color: white; } 
+        .status-s { background-color: #28a745; color: white; } 
+        .status-u { background-color: #000000; color: white; } 
+        .status-n { background-color: #dc3545; color: white; } 
+        .status-default { background-color: white; color: #333; border: 1px solid #ddd; }
+
+        .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -105,26 +130,25 @@
 <div class="container">
     <h2>Schedule</h2>
 
-    <!-- Checkbox Filters -->
     <div class="filter-group">
-        <label class="filter-item f-u"><input type="checkbox" class="filter-check" value="U -" checked> U</label>
-        <label class="filter-item f-n"><input type="checkbox" class="filter-check" value="N -" checked> N</label>
-        <label class="filter-item f-r"><input type="checkbox" class="filter-check" value="R -" checked> R</label>
-        <label class="filter-item f-s"><input type="checkbox" class="filter-check" value="S -" checked> S</label>
+        <label class="filter-item f-u"><input type="checkbox" class="filter-check" value="U -" checked>U</label>
+        <label class="filter-item f-n"><input type="checkbox" class="filter-check" value="N -" checked>N</label>
+        <label class="filter-item f-r"><input type="checkbox" class="filter-check" value="R -" checked>R</label>
+        <label class="filter-item f-s"><input type="checkbox" class="filter-check" value="S -" checked>S</label>
     </div>
 
     <div id="event-list">
-        <p class="status-msg">Loading events...</p>
+        <p class="status-msg">Fetching itinerary...</p>
     </div>
 </div>
 
 <script>
+    // Paste your .ics link here
     const ICAL_LINK = "https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/private-c2a909cd3418b50c8f35f20941040de2/basic.ics";
     let allEvents = [];
 
     window.onload = loadCalendar;
 
-    // Listen for checkbox changes
     document.querySelectorAll('.filter-check').forEach(box => {
         box.addEventListener('change', () => render(allEvents));
     });
@@ -132,7 +156,7 @@
     async function loadCalendar() {
         const listContainer = document.getElementById('event-list');
         if (!ICAL_LINK || ICAL_LINK.includes("PASTE_YOUR")) {
-            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Please add your iCal link to the HTML code.</p>';
+            listContainer.innerHTML = '<p class="status-msg">Update the ICAL_LINK in the script to see events.</p>';
             return;
         }
 
@@ -152,7 +176,7 @@
                 .map(vevent => {
                     const event = new ICAL.Event(vevent);
                     return {
-                        summary: event.summary || "Untitled Event",
+                        summary: event.summary || "No Title",
                         start: event.startDate.toJSDate()
                     };
                 })
@@ -161,54 +185,44 @@
 
             render(allEvents);
         } catch (err) {
-            listContainer.innerHTML = '<p class="status-msg" style="color:red;">Error syncing calendar.</p>';
+            listContainer.innerHTML = '<p class="status-msg">Failed to load calendar.</p>';
         }
     }
 
     function getEventStatus(summary) {
-        const upper = summary.toUpperCase();
-        if (upper.startsWith("R -")) return "R -";
-        if (upper.startsWith("S -")) return "S -";
-        if (upper.startsWith("U -")) return "U -";
-        if (upper.startsWith("N -")) return "N -";
+        const s = summary.toUpperCase();
+        if (s.startsWith("R -")) return "R -";
+        if (s.startsWith("S -")) return "S -";
+        if (s.startsWith("U -")) return "U -";
+        if (s.startsWith("N -")) return "N -";
         return null;
     }
 
     function render(events) {
         const listContainer = document.getElementById('event-list');
-        
-        // Get currently selected filters
-        const activeFilters = Array.from(document.querySelectorAll('.filter-check:checked'))
-                                   .map(cb => cb.value);
+        const activeFilters = Array.from(document.querySelectorAll('.filter-check:checked')).map(cb => cb.value);
 
-        // Filter the events based on the summary prefix
-        const filtered = events.filter(e => {
-            const status = getEventStatus(e.summary);
-            return activeFilters.includes(status);
-        });
+        const filtered = events.filter(e => activeFilters.includes(getEventStatus(e.summary)));
 
         if (filtered.length === 0) {
-            listContainer.innerHTML = '<p class="status-msg">No matching events found for selected filters.</p>';
+            listContainer.innerHTML = '<p class="status-msg">No events for selected filters.</p>';
             return;
         }
 
         listContainer.innerHTML = filtered.map(e => {
-            const statusPrefix = getEventStatus(e.summary);
-            const cssClass = "status-" + statusPrefix.charAt(0).toLowerCase();
+            const prefix = getEventStatus(e.summary);
+            const cssClass = "status-" + prefix.charAt(0).toLowerCase();
             
-            // Countdown logic
             const now = new Date(); now.setHours(0,0,0,0);
             const eventDay = new Date(e.start); eventDay.setHours(0,0,0,0);
             const diffDays = Math.floor((eventDay - now) / (1000 * 60 * 60 * 24));
             
             let num = diffDays, label = "Days";
-            if (diffDays === 0) { num = "In"; label = "Today"; }
-            else if (diffDays === 1) { label = "Day"; }
+            if (diffDays === 0) { num = "IN"; label = "TODAY"; }
+            else if (diffDays === 1) { label = "DAY"; }
 
-            const formattedDate = e.start.toLocaleDateString([], { 
-                weekday: 'short', month: 'short', day: 'numeric', 
-                hour: '2-digit', minute: '2-digit' 
-            });
+            const dateStr = e.start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+            const timeStr = e.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             return `
                 <div class="event-card ${cssClass}">
@@ -217,7 +231,7 @@
                         <span class="days-label">${label}</span>
                     </div>
                     <div class="event-info">
-                        <span class="date-text">${formattedDate}</span>
+                        <span class="date-text">${dateStr} @ ${timeStr}</span>
                         <span class="title-text">${e.summary}</span>
                     </div>
                 </div>
