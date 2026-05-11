@@ -1,80 +1,285 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="refresh" content="30">
-  <meta http-equiv='cache-control' content='no-cache'> 
-  <meta http-equiv='expires' content='0'> 
-  <meta http-equiv='pragma' content='no-cache'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Schedule with Tools</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --base-font-size: 16px;
+            
+            /* Color Variables for easy updates */
+            --color-u: #dc3545; /* Red */
+            --color-n: #ffc107; /* Yellow/Gold */
+            --color-r: #007bff; /* Blue */
+            --color-s: #28a745; /* Green */
+        }
 
-  
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"> </script>
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            font-size: var(--base-font-size);
+        }
 
-<style>
-iframe
-{
-width: 100%;
-height: 100%;
-}
-</style>
-	
-<script>
-$(document).ready(function() {
-var content = $('.pages')
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+        }
 
-	current=0;
-	content.hide();
-	Rotator();
-	function Rotator() {
-	$(content[current]).fadeIn('slow').delay(10000).fadeOut('slow');
-	$(content[current]).queue(function() {
-		current = current < content.length - 1 ? current + 1 : 0;
-		Rotator();
-			$(this).dequeue();
-		});
-	}
-	});
-</script>
-  
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: #5f6368;
+        }
+
+        .font-controls button {
+            background: #eee;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .est-clock {
+            text-align: right;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        h2 { 
+            margin: 5px 0 15px; 
+            color: #1a73e8; 
+            text-align: center; 
+            font-size: 1.4em;
+        }
+
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 5px;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .filter-item input { transform: scale(1.2); margin-bottom: 4px; }
+        
+        /* Filter Button Backgrounds */
+        .f-u { background: var(--color-u); }
+        .f-n { background: var(--color-n); color: #212529; } /* Dark text for yellow */
+        .f-r { background: var(--color-r); }
+        .f-s { background: var(--color-s); }
+
+        .event-card {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+        }
+
+        .countdown-bubble {
+            background: #ffffff;
+            min-width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .days-num { font-size: 1.1em; font-weight: 800; line-height: 1; }
+        .days-label { font-size: 0.55em; text-transform: uppercase; font-weight: 700; }
+
+        /* Inherit bubble text color */
+        .status-u .days-num, .status-u .days-label { color: var(--color-u); }
+        .status-n .days-num, .status-n .days-label { color: #856404; } /* Darker gold for visibility */
+        .status-r .days-num, .status-r .days-label { color: var(--color-r); }
+        .status-s .days-num, .status-s .days-label { color: var(--color-s); }
+
+        .event-info { flex-grow: 1; min-width: 0; }
+        .date-text { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; opacity: 0.9; }
+        .title-text { font-size: 1em; font-weight: 600; display: block; word-wrap: break-word; }
+
+        /* Card Backgrounds */
+        .status-u { background-color: var(--color-u); color: white; } 
+        .status-n { background-color: var(--color-n); color: #212529; } /* Dark text for contrast on yellow */
+        .status-r { background-color: var(--color-r); color: white; } 
+        .status-s { background-color: var(--color-s); color: white; } 
+
+        .status-msg { text-align: center; color: #666; font-style: italic; margin-top: 20px; }
+    </style>
 </head>
- 
 <body>
 
-<pre> <h1> <span id="datetime"></span> </h1> </pre>
+<div class="container">
+    <div class="toolbar">
+        <div class="font-controls">
+            <button onclick="changeFontSize(1)">A+</button>
+            <button onclick="changeFontSize(-1)">A-</button>
+        </div>
+        <div class="est-clock" id="estClock">Loading EST...</div>
+    </div>
 
-  
+    <h2>Schedule</h2>
+
+    <div class="filter-group">
+        <label class="filter-item f-u"><input type="checkbox" class="filter-check" value="U -" checked>U</label>
+        <label class="filter-item f-n"><input type="checkbox" class="filter-check" value="N -" checked>N</label>
+        <label class="filter-item f-r"><input type="checkbox" class="filter-check" value="R -" checked>R</label>
+        <label class="filter-item f-s"><input type="checkbox" class="filter-check" value="S -" checked>S</label>
+    </div>
+
+    <div id="event-list">
+        <p class="status-msg">Fetching itinerary...</p>
+    </div>
+</div>
 
 <script>
-  var now = new Date();
-	
-// Request a weekday along with a long date
-const dateOptions = {
-  weekday: "long",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-};
-	
-//dateOptions.timeZone = "America/New_York";
-//dateOptions.timeZoneName = "short";
-console.log(now.toLocaleDateString("en-US", dateOptions));
-var dateOnly = now.toLocaleDateString("en-US", dateOptions);
+    const ICAL_LINK = "https://calendar.google.com/calendar/ical/g4unrs%40gmail.com/private-c2a909cd3418b50c8f35f20941040de2/basic.ics";
+    let allEvents = [];
+    let currentFontSize = 16;
 
-const timeOptions = { timeZone: "America/New_York", timeZoneName: "short"};
-console.log(now.toLocaleTimeString("en-US", timeOptions)); // "3:00:00 AM GMT"
-var timeOnly = now.toLocaleTimeString("en-US", timeOptions);
-	
-document.getElementById("datetime").innerHTML = dateOnly + " @ " + timeOnly;
-//document.getElementById("datetime").innerHTML = timeOnly;
-	
+    window.onload = () => {
+        loadCalendar();
+        updateClock();
+        setInterval(updateClock, 1000);
+    };
+
+    function changeFontSize(delta) {
+        currentFontSize += delta;
+        document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+    }
+
+    function updateClock() {
+        const options = { 
+            timeZone: 'America/New_York', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true,
+            month: 'short',
+            day: 'numeric'
+        };
+        const formatter = new Intl.DateTimeFormat('en-US', options);
+        document.getElementById('estClock').innerText = formatter.format(new Date()) + " EST";
+    }
+
+    document.querySelectorAll('.filter-check').forEach(box => {
+        box.addEventListener('change', () => render(allEvents));
+    });
+
+    async function loadCalendar() {
+        const listContainer = document.getElementById('event-list');
+        try {
+            const proxy = "https://corsproxy.io/?"; 
+            const response = await fetch(proxy + encodeURIComponent(ICAL_LINK));
+            const text = await response.text();
+            const jcalData = ICAL.parse(text);
+            const comp = new ICAL.Component(jcalData);
+            const vevents = comp.getAllSubcomponents('vevent');
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            allEvents = vevents.map(vevent => {
+                const event = new ICAL.Event(vevent);
+                return {
+                    summary: event.summary || "No Title",
+                    start: event.startDate.toJSDate()
+                };
+            }).filter(e => e.start >= today).sort((a, b) => a.start - b.start);
+
+            render(allEvents);
+        } catch (err) {
+            listContainer.innerHTML = '<p class="status-msg">Sync Error.</p>';
+        }
+    }
+
+    function getEventStatus(summary) {
+        const s = summary.toUpperCase();
+        if (s.startsWith("R -")) return "R -";
+        if (s.startsWith("S -")) return "S -";
+        if (s.startsWith("U -")) return "U -";
+        if (s.startsWith("N -")) return "N -";
+        return null;
+    }
+
+    function render(events) {
+        const listContainer = document.getElementById('event-list');
+        const activeFilters = Array.from(document.querySelectorAll('.filter-check:checked')).map(cb => cb.value);
+        const filtered = events.filter(e => activeFilters.includes(getEventStatus(e.summary)));
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = '<p class="status-msg">No matching events.</p>';
+            return;
+        }
+
+        const now = new Date(); 
+        now.setHours(0,0,0,0);
+
+        listContainer.innerHTML = filtered.map(e => {
+            const prefix = getEventStatus(e.summary);
+            const cssClass = "status-" + prefix.charAt(0).toLowerCase();
+            
+            const eventDay = new Date(e.start); 
+            eventDay.setHours(0,0,0,0);
+            
+            const diffDays = Math.floor((eventDay - now) / (1000 * 60 * 60 * 24));
+            
+            let num = diffDays, label = "Days";
+            if (diffDays === 0) { num = "IN"; label = "TODAY"; }
+            else if (diffDays === 1) { label = "DAY"; }
+
+            const dateStr = e.start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+            const timeStr = e.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            return `
+                <div class="event-card ${cssClass}">
+                    <div class="countdown-bubble">
+                        <span class="days-num">${num}</span>
+                        <span class="days-label">${label}</span>
+                    </div>
+                    <div class="event-info">
+                        <span class="date-text">${dateStr} @ ${timeStr}</span>
+                        <span class="title-text">${e.summary}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 </script>
-
-
-<div class = "pages">
-<iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=2&ctz=America%2FNew_York&showPrint=0&mode=AGENDA&showTabs=0&showTitle=1&showNav=1&showDate=1&src=ZzR1bnJzQGdtYWlsLmNvbQ&color=%23D50000"></iframe>
-</div>
-	
-<div class = "pages">
-<iframe src="https://calendar.google.com/calendar/embed?height=600&wkst=2&ctz=America%2FNew_York&showPrint=0&mode=MONTH&showTabs=0&showCalendars=0&showTz=0&src=ZzR1bnJzQGdtYWlsLmNvbQ&color=%23D50000"></iframe>"> 
-</div>
-	
 </body>
 </html>
